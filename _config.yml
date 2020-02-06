@@ -3,9 +3,7 @@ description: "hey yo!"
 theme: jekyll-theme-cayman
 permalink: "/stories/:title"
 relative_permalinks: false
-
-github:
-  is_project_page: false
+is_project_page: false
 
 
 
