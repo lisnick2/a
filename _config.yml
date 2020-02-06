@@ -5,6 +5,8 @@ permalink: "/stories/:title"
 relative_permalinks: false
 is_project_page: false
 
+show_downloads: true
+google_analytics:
 
 
 
