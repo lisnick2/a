@@ -16,7 +16,7 @@
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-        
+
         html, body {
             width: 100%;
             height: 100%;
@@ -24,13 +24,13 @@
             background: #2c3e50;
             font-family: Arial, sans-serif;
         }
-        
+
         .container {
             text-align: center;
             padding: 10px;
             padding-top: 20px;
         }
-        
+
         .header {
             background: #34495e;
             padding: 15px 25px;
@@ -38,7 +38,7 @@
             margin-bottom: 15px;
             display: inline-block;
         }
-        
+
         .info-box {
             background: #1a1a2e;
             color: #e74c3c;
@@ -52,7 +52,7 @@
             display: inline-block;
             vertical-align: middle;
         }
-        
+
         .reset-btn {
             width: 50px;
             height: 50px;
@@ -64,23 +64,23 @@
             margin: 0 15px;
             vertical-align: middle;
         }
-        
+
         .reset-btn:active {
             background: #e67e22;
         }
-        
+
         .grid {
             display: inline-block;
             background: #7f8c8d;
             padding: 5px;
             border-radius: 5px;
         }
-        
+
         .row {
             white-space: nowrap;
             font-size: 0;
         }
-        
+
         .cell {
             width: 35px;
             height: 35px;
@@ -96,23 +96,23 @@
             text-align: center;
             cursor: pointer;
         }
-        
+
         .cell:active {
             background: #2980b9;
         }
-        
+
         .cell.revealed {
             background: #ecf0f1;
         }
-        
+
         .cell.mine {
             background: #e74c3c;
         }
-        
+
         .cell.flagged {
             background: #9b59b6;
         }
-        
+
         .n1 { color: #3498db; }
         .n2 { color: #27ae60; }
         .n3 { color: #e74c3c; }
@@ -121,30 +121,39 @@
         .n6 { color: #16a085; }
         .n7 { color: #2c3e50; }
         .n8 { color: #7f8c8d; }
-        
+
         .message {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
             text-align: center;
-            padding-top: 200px;
+            padding-top: 180px;
             z-index: 100;
             display: none;
         }
-        
+
         .message.show {
             display: block;
         }
-        
+
         .message-text {
-            font-size: 36px;
-            color: white;
-            margin-bottom: 20px;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
-        
+
+        .message-text.win {
+            color: #2ecc71;
+        }
+
+        .message-text.lose {
+            color: #e74c3c;
+        }
+
         .message-btn {
             padding: 15px 40px;
             font-size: 24px;
@@ -153,11 +162,11 @@
             border: none;
             border-radius: 10px;
         }
-        
+
         .difficulty {
             margin-bottom: 15px;
         }
-        
+
         .diff-btn {
             padding: 10px 20px;
             font-size: 16px;
@@ -167,11 +176,11 @@
             color: white;
             margin: 3px;
         }
-        
+
         .diff-btn.active {
             background: #27ae60;
         }
-        
+
         .instructions {
             color: #bdc3c7;
             font-size: 14px;
@@ -187,20 +196,20 @@
             <button class="diff-btn" id="diff2" onclick="setDifficulty(10,10,20,this)">Средне</button>
             <button class="diff-btn" id="diff3" onclick="setDifficulty(12,12,35,this)">Сложно</button>
         </div>
-        
+
         <div class="header">
             <span class="info-box" id="mineCount">10</span>
             <button class="reset-btn" onclick="resetGame()">😊</button>
             <span class="info-box" id="timer">000</span>
         </div>
-        
+
         <div class="grid" id="grid"></div>
-        
+
         <div class="instructions">
             Тап = открыть • Долгий тап = флажок
         </div>
     </div>
-    
+
     <div class="message" id="message">
         <div class="message-text" id="messageText"></div>
         <button class="message-btn" onclick="resetGame()">Играть снова</button>
@@ -221,66 +230,65 @@
         var touchTimer = null;
         var touchMoved = false;
         var touchStartTime = 0;
-        
+
         function setDifficulty(rows, cols, mines, btn) {
             ROWS = rows;
             COLS = cols;
             MINES = mines;
-            
+
             document.getElementById('diff1').className = 'diff-btn';
             document.getElementById('diff2').className = 'diff-btn';
             document.getElementById('diff3').className = 'diff-btn';
             btn.className = 'diff-btn active';
-            
+
             resetGame();
         }
-        
+
         function createGrid() {
             var gridEl = document.getElementById('grid');
             var html = '';
-            
+
             grid = [];
             revealed = [];
             flagged = [];
-            
+
             for (var i = 0; i < ROWS; i++) {
                 grid[i] = [];
                 revealed[i] = [];
                 flagged[i] = [];
-                
+
                 html += '<div class="row">';
-                
+
                 for (var j = 0; j < COLS; j++) {
                     grid[i][j] = 0;
                     revealed[i][j] = false;
                     flagged[i][j] = false;
-                    
+
                     html += '<span class="cell" data-row="' + i + '" data-col="' + j + '"></span>';
                 }
-                
+
                 html += '</div>';
             }
-            
+
             gridEl.innerHTML = html;
-            
-            // Добавляем события
+
             var cells = gridEl.getElementsByClassName('cell');
             for (var k = 0; k < cells.length; k++) {
                 addCellEvents(cells[k]);
             }
         }
-        
+
         function addCellEvents(cell) {
             cell.ontouchstart = function(e) {
                 if (gameOver) return;
                 e.preventDefault();
                 touchMoved = false;
                 touchStartTime = Date.now();
-                
+
                 var row = parseInt(this.getAttribute('data-row'));
                 var col = parseInt(this.getAttribute('data-col'));
                 var self = this;
-                
+
                 touchTimer = setTimeout(function() {
                     if (!touchMoved) {
                         toggleFlag(row, col);
@@ -288,7 +296,7 @@
                     touchTimer = null;
                 }, 500);
             };
-            
+
             cell.ontouchmove = function(e) {
                 touchMoved = true;
                 if (touchTimer) {
@@ -296,15 +304,15 @@
                     touchTimer = null;
                 }
             };
-            
+
             cell.ontouchend = function(e) {
                 if (gameOver) return;
                 e.preventDefault();
-                
+
                 if (touchTimer) {
                     clearTimeout(touchTimer);
                     touchTimer = null;
-                    
+
                     if (!touchMoved) {
                         var row = parseInt(this.getAttribute('data-row'));
                         var col = parseInt(this.getAttribute('data-col'));
@@ -312,15 +320,14 @@
                     }
                 }
             };
-            
-            // Для мыши (тестирование на компьютере)
+
             cell.onclick = function(e) {
                 if (gameOver) return;
                 var row = parseInt(this.getAttribute('data-row'));
                 var col = parseInt(this.getAttribute('data-col'));
                 revealCell(row, col);
             };
-            
+
             cell.oncontextmenu = function(e) {
                 e.preventDefault();
                 if (gameOver) return;
@@ -330,27 +337,27 @@
                 return false;
             };
         }
-        
+
         function placeMines(excludeRow, excludeCol) {
             var placed = 0;
             while (placed < MINES) {
                 var r = Math.floor(Math.random() * ROWS);
                 var c = Math.floor(Math.random() * COLS);
-                
+
                 if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) {
                     continue;
                 }
-                
+
                 if (grid[r][c] !== -1) {
                     grid[r][c] = -1;
                     placed++;
                 }
             }
-            
+
             for (var i = 0; i < ROWS; i++) {
                 for (var j = 0; j < COLS; j++) {
                     if (grid[i][j] === -1) continue;
-                    
+
                     var count = 0;
                     for (var di = -1; di <= 1; di++) {
                         for (var dj = -1; dj <= 1; dj++) {
@@ -365,12 +372,12 @@
                 }
             }
         }
-        
+
         function toggleFlag(row, col) {
             if (revealed[row][col]) return;
-            
+
             var cell = getCell(row, col);
-            
+
             if (flagged[row][col]) {
                 flagged[row][col] = false;
                 cell.className = 'cell';
@@ -382,30 +389,30 @@
                 cell.innerHTML = '🚩';
                 minesLeft--;
             }
-            
+
             updateMineCount();
         }
-        
+
         function revealCell(row, col) {
             if (flagged[row][col] || revealed[row][col]) return;
-            
+
             if (firstClick) {
                 firstClick = false;
                 placeMines(row, col);
                 startTimer();
             }
-            
+
             revealed[row][col] = true;
             var cell = getCell(row, col);
             cell.className = 'cell revealed';
-            
+
             if (grid[row][col] === -1) {
                 cell.className = 'cell mine';
                 cell.innerHTML = '💣';
                 endGame(false);
                 return;
             }
-            
+
             if (grid[row][col] > 0) {
                 cell.innerHTML = grid[row][col];
                 cell.className = 'cell revealed n' + grid[row][col];
@@ -422,16 +429,16 @@
                     }
                 }
             }
-            
+
             checkWin();
         }
-        
+
         function getCell(row, col) {
             var rows = document.getElementById('grid').getElementsByClassName('row');
             var cells = rows[row].getElementsByClassName('cell');
             return cells[col];
         }
-        
+
         function checkWin() {
             var unrevealed = 0;
             for (var i = 0; i < ROWS; i++) {
@@ -439,18 +446,18 @@
                     if (!revealed[i][j]) unrevealed++;
                 }
             }
-            
+
             if (unrevealed === MINES) {
                 endGame(true);
             }
         }
-        
+
         function endGame(won) {
             gameOver = true;
             if (timerInterval) clearInterval(timerInterval);
-            
+
             document.getElementsByClassName('reset-btn')[0].innerHTML = won ? '😎' : '😵';
-            
+
             for (var i = 0; i < ROWS; i++) {
                 for (var j = 0; j < COLS; j++) {
                     if (grid[i][j] === -1 && !revealed[i][j]) {
@@ -465,11 +472,18 @@
                     }
                 }
             }
-            
-            document.getElementById('messageText').innerHTML = won ? '🎉 Победа!' : '💥 Проигрыш!';
+
+            var msgText = document.getElementById('messageText');
+            if (won) {
+                msgText.innerHTML = '🎉 Победа! 🎉';
+                msgText.className = 'message-text win';
+            } else {
+                msgText.innerHTML = '💥 Проигрыш! 💥';
+                msgText.className = 'message-text lose';
+            }
             document.getElementById('message').className = 'message show';
         }
-        
+
         function startTimer() {
             seconds = 0;
             timerInterval = setInterval(function() {
@@ -479,36 +493,34 @@
                 document.getElementById('timer').innerHTML = s;
             }, 1000);
         }
-        
+
         function updateMineCount() {
             var s = String(minesLeft);
             if (s.length < 2) s = '0' + s;
             document.getElementById('mineCount').innerHTML = s;
         }
-        
+
         function resetGame() {
             gameOver = false;
             firstClick = true;
             minesLeft = MINES;
             seconds = 0;
-            
+
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
-            
+
             document.getElementById('timer').innerHTML = '000';
             updateMineCount();
             document.getElementsByClassName('reset-btn')[0].innerHTML = '😊';
             document.getElementById('message').className = 'message';
-            
+
             createGrid();
         }
-        
-        // Блокировка навигации
+
         window.onbeforeunload = function() {
             return 'Уйти?';
         };
-        
-        // Запуск
+
         resetGame();
     </script>
 </body>
