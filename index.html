@@ -65,9 +65,7 @@
             vertical-align: middle;
         }
 
-        .reset-btn:active {
-            background: #e67e22;
-        }
+        .reset-btn:active { background: #e67e22; }
 
         .grid {
             display: inline-block;
@@ -97,21 +95,10 @@
             cursor: pointer;
         }
 
-        .cell:active {
-            background: #2980b9;
-        }
-
-        .cell.revealed {
-            background: #ecf0f1;
-        }
-
-        .cell.mine {
-            background: #e74c3c;
-        }
-
-        .cell.flagged {
-            background: #9b59b6;
-        }
+        .cell:active { background: #2980b9; }
+        .cell.revealed { background: #ecf0f1; }
+        .cell.mine { background: #e74c3c; }
+        .cell.flagged { background: #9b59b6; }
 
         .n1 { color: #3498db; }
         .n2 { color: #27ae60; }
@@ -124,37 +111,60 @@
 
         .message {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); /* прозрачнее */
             text-align: center;
             padding-top: 180px;
             z-index: 100;
             display: none;
+            overflow: hidden;
         }
+        .message.show { display: block; }
 
-        .message.show {
-            display: block;
+        /* Canvas для фейерверков */
+        #fx {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 101;
+            pointer-events: none;
         }
 
         .message-text {
-            font-size: 48px;
+            position: relative;
+            z-index: 102;
+            font-size: 48px; /* больше */
             font-weight: bold;
             margin-bottom: 25px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.45);
         }
 
-        .message-text.win {
-            color: #2ecc71;
+        .message-text.win { color: #2ecc71; }
+        .message-text.lose { color: #e74c3c; }
+
+        /* Короткие анимации (немного “эффекта”, но не долго) */
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0.0; }
+            40% { transform: scale(1.10); opacity: 1; }
+            100% { transform: scale(1.0); opacity: 1; }
+        }
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            15% { transform: translate(-3px,0); }
+            30% { transform: translate(3px,0); }
+            45% { transform: translate(-2px,0); }
+            60% { transform: translate(2px,0); }
+            75% { transform: translate(-1px,0); }
+            100% { transform: translate(0,0); }
         }
 
-        .message-text.lose {
-            color: #e74c3c;
-        }
+        .pop { animation: pop 0.55s ease-out; }
+        .shake { animation: shake 0.6s ease-in-out; }
 
         .message-btn {
+            position: relative;
+            z-index: 102;
             padding: 15px 40px;
             font-size: 24px;
             background: #27ae60;
@@ -163,9 +173,7 @@
             border-radius: 10px;
         }
 
-        .difficulty {
-            margin-bottom: 15px;
-        }
+        .difficulty { margin-bottom: 15px; }
 
         .diff-btn {
             padding: 10px 20px;
@@ -176,10 +184,7 @@
             color: white;
             margin: 3px;
         }
-
-        .diff-btn.active {
-            background: #27ae60;
-        }
+        .diff-btn.active { background: #27ae60; }
 
         .instructions {
             color: #bdc3c7;
@@ -211,6 +216,7 @@
     </div>
 
     <div class="message" id="message">
+        <canvas id="fx"></canvas>
         <div class="message-text" id="messageText"></div>
         <button class="message-btn" onclick="resetGame()">Играть снова</button>
     </div>
@@ -219,18 +225,143 @@
         var ROWS = 8;
         var COLS = 8;
         var MINES = 10;
+
         var grid = [];
         var revealed = [];
         var flagged = [];
         var gameOver = false;
         var firstClick = true;
+
         var timerInterval = null;
         var seconds = 0;
         var minesLeft = MINES;
+
         var touchTimer = null;
         var touchMoved = false;
-        var touchStartTime = 0;
 
+        // ====== Fireworks (canvas) ======
+        var fxCanvas = document.getElementById('fx');
+        var fxCtx = fxCanvas.getContext('2d');
+
+        var fxRAF = null;
+        var fxStart = 0;
+
+        function stopFireworks() {
+            if (fxRAF) {
+                try { cancelAnimationFrame(fxRAF); } catch(e){}
+                fxRAF = null;
+            }
+            try { fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height); } catch(e){}
+        }
+
+        function startFireworks() {
+            stopFireworks();
+
+            var w = window.innerWidth || 320;
+            var h = window.innerHeight || 480;
+            var dpr = window.devicePixelRatio || 1;
+
+            // Чтобы работало и на старых iPad 2, не делаем слишком много DPI
+            if (dpr > 2) dpr = 2;
+
+            fxCanvas.width = Math.floor(w * dpr);
+            fxCanvas.height = Math.floor(h * dpr);
+
+            // Координаты в CSS пикселях
+            fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            fxCtx.clearRect(0, 0, w, h);
+
+            var particles = [];
+            var startTime = Date.now();
+            fxStart = startTime;
+
+            var duration = 1200; // коротко
+
+            var centerX = w * 0.5;
+            var baseY = h * 0.35;
+
+            // “побольше”
+            var bursts = 26;        // больше разрывов
+            var perBurst = 16;     // больше частиц
+            var gravity = 0.08;
+
+            function rand(min, max) {
+                return min + Math.random() * (max - min);
+            }
+
+            function pickColor() {
+                // зелёно-белые и жёлтые оттенки
+                var colors = ['#2ecc71', '#7CFFB2', '#F1C40F', '#FFFFFF'];
+                return colors[(Math.random() * colors.length) | 0];
+            }
+
+            for (var b = 0; b < bursts; b++) {
+                var bx = centerX + rand(-w*0.18, w*0.18);
+                var by = baseY + rand(-h*0.12, h*0.10);
+
+                // Направление: часть вверх/в стороны
+                var baseAngle = rand(Math.PI * 0.85, Math.PI * 2.15);
+
+                for (var i = 0; i < perBurst; i++) {
+                    var ang = baseAngle + rand(-Math.PI/2, Math.PI/2);
+                    var speed = rand(2.2, 5.6);
+
+                    particles.push({
+                        x: bx,
+                        y: by,
+                        vx: Math.cos(ang) * speed,
+                        vy: Math.sin(ang) * speed,
+                        g: gravity * rand(0.9, 1.25),
+                        life: rand(40, 85),     // количество кадров “жизни”
+                        decay: rand(0.90, 0.97),
+                        size: rand(1.2, 2.4),
+                        color: pickColor(),
+                        a: 1
+                    });
+                }
+            }
+
+            function draw() {
+                var now = Date.now();
+                if (now - startTime > duration) {
+                    stopFireworks();
+                    return;
+                }
+
+                fxCtx.clearRect(0, 0, w, h);
+
+                for (var p = 0; p < particles.length; p++) {
+                    var pt = particles[p];
+
+                    pt.vy += pt.g;
+                    pt.x += pt.vx;
+                    pt.y += pt.vy;
+
+                    pt.life -= 1;
+                    pt.a *= pt.decay;
+
+                    if (pt.a < 0.02 || pt.life <= 0) continue;
+
+                    fxCtx.globalAlpha = pt.a;
+
+                    // Рисуем “точки”
+                    fxCtx.fillStyle = pt.color;
+                    fxCtx.fillRect(pt.x - pt.size/2, pt.y - pt.size/2, pt.size, pt.size);
+
+                    // Лёгкий “след” — короткая линия
+                    fxCtx.globalAlpha = pt.a * 0.7;
+                    fxCtx.fillRect(pt.x - pt.vx*0.12, pt.y - pt.vy*0.12, 1, 1);
+                }
+
+                fxCtx.globalAlpha = 1;
+
+                fxRAF = requestAnimationFrame(draw);
+            }
+
+            fxRAF = requestAnimationFrame(draw);
+        }
+
+        // ====== Game ======
         function setDifficulty(rows, cols, mines, btn) {
             ROWS = rows;
             COLS = cols;
@@ -273,26 +404,24 @@
             gridEl.innerHTML = html;
 
             var cells = gridEl.getElementsByClassName('cell');
-            for (var k = 0; k < cells.length; k++) {
-                addCellEvents(cells[k]);
-            }
+            for (var k = 0; k < cells.length; k++) addCellEvents(cells[k]);
         }
 
         function addCellEvents(cell) {
             cell.ontouchstart = function(e) {
                 if (gameOver) return;
                 e.preventDefault();
+
                 touchMoved = false;
-                touchStartTime = Date.now();
+                touchTimer = null;
 
                 var row = parseInt(this.getAttribute('data-row'));
                 var col = parseInt(this.getAttribute('data-col'));
                 var self = this;
 
                 touchTimer = setTimeout(function() {
-                    if (!touchMoved) {
-                        toggleFlag(row, col);
-                    }
+                    // долгий тап = флажок
+                    toggleFlag(row, col);
                     touchTimer = null;
                 }, 500);
             };
@@ -309,6 +438,7 @@
                 if (gameOver) return;
                 e.preventDefault();
 
+                // Если тап был короткий — открываем
                 if (touchTimer) {
                     clearTimeout(touchTimer);
                     touchTimer = null;
@@ -321,6 +451,7 @@
                 }
             };
 
+            // для ПК/тестов
             cell.onclick = function(e) {
                 if (gameOver) return;
                 var row = parseInt(this.getAttribute('data-row'));
@@ -340,13 +471,12 @@
 
         function placeMines(excludeRow, excludeCol) {
             var placed = 0;
+
             while (placed < MINES) {
                 var r = Math.floor(Math.random() * ROWS);
                 var c = Math.floor(Math.random() * COLS);
 
-                if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) {
-                    continue;
-                }
+                if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) continue;
 
                 if (grid[r][c] !== -1) {
                     grid[r][c] = -1;
@@ -371,6 +501,12 @@
                     grid[i][j] = count;
                 }
             }
+        }
+
+        function getCell(row, col) {
+            var rows = document.getElementById('grid').getElementsByClassName('row');
+            var cells = rows[row].getElementsByClassName('cell');
+            return cells[col];
         }
 
         function toggleFlag(row, col) {
@@ -403,6 +539,7 @@
             }
 
             revealed[row][col] = true;
+
             var cell = getCell(row, col);
             cell.className = 'cell revealed';
 
@@ -422,21 +559,13 @@
                         var ni = row + di;
                         var nj = col + dj;
                         if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
-                            if (!revealed[ni][nj]) {
-                                revealCell(ni, nj);
-                            }
+                            if (!revealed[ni][nj]) revealCell(ni, nj);
                         }
                     }
                 }
             }
 
             checkWin();
-        }
-
-        function getCell(row, col) {
-            var rows = document.getElementById('grid').getElementsByClassName('row');
-            var cells = rows[row].getElementsByClassName('cell');
-            return cells[col];
         }
 
         function checkWin() {
@@ -446,15 +575,15 @@
                     if (!revealed[i][j]) unrevealed++;
                 }
             }
-
-            if (unrevealed === MINES) {
-                endGame(true);
-            }
+            if (unrevealed === MINES) endGame(true);
         }
 
         function endGame(won) {
             gameOver = true;
+
             if (timerInterval) clearInterval(timerInterval);
+
+            stopFireworks(); // на всякий случай
 
             document.getElementsByClassName('reset-btn')[0].innerHTML = won ? '😎' : '😵';
 
@@ -473,15 +602,21 @@
                 }
             }
 
+            var msg = document.getElementById('message');
             var msgText = document.getElementById('messageText');
+
             if (won) {
                 msgText.innerHTML = '🎉 Победа! 🎉';
-                msgText.className = 'message-text win';
+                msgText.className = 'message-text win pop';
             } else {
                 msgText.innerHTML = '💥 Проигрыш! 💥';
-                msgText.className = 'message-text lose';
+                msgText.className = 'message-text lose shake';
             }
-            document.getElementById('message').className = 'message show';
+
+            msg.className = 'message show';
+
+            // Фейерверки только при победе
+            if (won) startFireworks();
         }
 
         function startTimer() {
@@ -503,16 +638,22 @@
         function resetGame() {
             gameOver = false;
             firstClick = true;
+
             minesLeft = MINES;
             seconds = 0;
 
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = null;
 
+            stopFireworks();
+
             document.getElementById('timer').innerHTML = '000';
             updateMineCount();
+
             document.getElementsByClassName('reset-btn')[0].innerHTML = '😊';
-            document.getElementById('message').className = 'message';
+
+            var msg = document.getElementById('message');
+            msg.className = 'message';
 
             createGrid();
         }
