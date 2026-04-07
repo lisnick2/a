@@ -14,8 +14,9 @@
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-
+        
         html, body {
             width: 100%;
             height: 100%;
@@ -23,26 +24,21 @@
             background: #2c3e50;
             font-family: Arial, sans-serif;
         }
-
+        
         .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
+            text-align: center;
             padding: 10px;
+            padding-top: 20px;
         }
-
+        
         .header {
             background: #34495e;
             padding: 15px 25px;
             border-radius: 10px;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
+            display: inline-block;
         }
-
+        
         .info-box {
             background: #1a1a2e;
             color: #e74c3c;
@@ -53,8 +49,10 @@
             min-width: 70px;
             text-align: center;
             font-family: monospace;
+            display: inline-block;
+            vertical-align: middle;
         }
-
+        
         .reset-btn {
             width: 50px;
             height: 50px;
@@ -63,22 +61,26 @@
             border-radius: 10px;
             background: #f39c12;
             cursor: pointer;
+            margin: 0 15px;
+            vertical-align: middle;
         }
-
+        
         .reset-btn:active {
             background: #e67e22;
         }
-
+        
         .grid {
-            display: grid;
-            gap: 2px;
+            display: inline-block;
             background: #7f8c8d;
             padding: 5px;
             border-radius: 5px;
-            max-width: 100%;
-            max-height: 70vh;
         }
-
+        
+        .row {
+            white-space: nowrap;
+            font-size: 0;
+        }
+        
         .cell {
             width: 35px;
             height: 35px;
@@ -87,32 +89,30 @@
             border-radius: 4px;
             font-size: 18px;
             font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: inline-block;
+            vertical-align: top;
+            margin: 1px;
+            line-height: 35px;
+            text-align: center;
             cursor: pointer;
         }
-
+        
         .cell:active {
             background: #2980b9;
         }
-
+        
         .cell.revealed {
             background: #ecf0f1;
         }
-
+        
         .cell.mine {
             background: #e74c3c;
         }
-
+        
         .cell.flagged {
             background: #9b59b6;
         }
-
-        .cell.flagged:after {
-            content: "🚩";
-        }
-
+        
         .n1 { color: #3498db; }
         .n2 { color: #27ae60; }
         .n3 { color: #e74c3c; }
@@ -121,7 +121,7 @@
         .n6 { color: #16a085; }
         .n7 { color: #2c3e50; }
         .n8 { color: #7f8c8d; }
-
+        
         .message {
             position: fixed;
             top: 0;
@@ -129,23 +129,22 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            text-align: center;
+            padding-top: 200px;
             z-index: 100;
-        }
-
-        .message.hidden {
             display: none;
         }
-
+        
+        .message.show {
+            display: block;
+        }
+        
         .message-text {
             font-size: 36px;
             color: white;
             margin-bottom: 20px;
         }
-
+        
         .message-btn {
             padding: 15px 40px;
             font-size: 24px;
@@ -154,13 +153,11 @@
             border: none;
             border-radius: 10px;
         }
-
+        
         .difficulty {
             margin-bottom: 15px;
-            display: flex;
-            gap: 10px;
         }
-
+        
         .diff-btn {
             padding: 10px 20px;
             font-size: 16px;
@@ -168,12 +165,13 @@
             border-radius: 8px;
             background: #95a5a6;
             color: white;
+            margin: 3px;
         }
-
+        
         .diff-btn.active {
             background: #27ae60;
         }
-
+        
         .instructions {
             color: #bdc3c7;
             font-size: 14px;
@@ -185,31 +183,30 @@
 <body>
     <div class="container">
         <div class="difficulty">
-            <button class="diff-btn active" onclick="setDifficulty(8,8,10)">Легко</button>
-            <button class="diff-btn" onclick="setDifficulty(10,10,20)">Средне</button>
-            <button class="diff-btn" onclick="setDifficulty(12,12,35)">Сложно</button>
+            <button class="diff-btn active" id="diff1" onclick="setDifficulty(8,8,10,this)">Легко</button>
+            <button class="diff-btn" id="diff2" onclick="setDifficulty(10,10,20,this)">Средне</button>
+            <button class="diff-btn" id="diff3" onclick="setDifficulty(12,12,35,this)">Сложно</button>
         </div>
-
+        
         <div class="header">
-            <div class="info-box" id="mineCount">10</div>
+            <span class="info-box" id="mineCount">10</span>
             <button class="reset-btn" onclick="resetGame()">😊</button>
-            <div class="info-box" id="timer">000</div>
+            <span class="info-box" id="timer">000</span>
         </div>
-
+        
         <div class="grid" id="grid"></div>
-
+        
         <div class="instructions">
             Тап = открыть • Долгий тап = флажок
         </div>
     </div>
-
-    <div class="message hidden" id="message">
+    
+    <div class="message" id="message">
         <div class="message-text" id="messageText"></div>
         <button class="message-btn" onclick="resetGame()">Играть снова</button>
     </div>
 
     <script>
-        // Используем var для совместимости со старыми браузерами
         var ROWS = 8;
         var COLS = 8;
         var MINES = 10;
@@ -223,80 +220,137 @@
         var minesLeft = MINES;
         var touchTimer = null;
         var touchMoved = false;
-
-        function setDifficulty(rows, cols, mines) {
+        var touchStartTime = 0;
+        
+        function setDifficulty(rows, cols, mines, btn) {
             ROWS = rows;
             COLS = cols;
             MINES = mines;
-
-            var btns = document.getElementsByClassName('diff-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].className = 'diff-btn';
-            }
-            event.target.className = 'diff-btn active';
-
+            
+            document.getElementById('diff1').className = 'diff-btn';
+            document.getElementById('diff2').className = 'diff-btn';
+            document.getElementById('diff3').className = 'diff-btn';
+            btn.className = 'diff-btn active';
+            
             resetGame();
         }
-
+        
         function createGrid() {
             var gridEl = document.getElementById('grid');
-            gridEl.innerHTML = '';
-            gridEl.style.gridTemplateColumns = 'repeat(' + COLS + ', 35px)';
-
+            var html = '';
+            
             grid = [];
             revealed = [];
             flagged = [];
-
+            
             for (var i = 0; i < ROWS; i++) {
                 grid[i] = [];
                 revealed[i] = [];
                 flagged[i] = [];
+                
+                html += '<div class="row">';
+                
                 for (var j = 0; j < COLS; j++) {
                     grid[i][j] = 0;
                     revealed[i][j] = false;
                     flagged[i][j] = false;
-
-                    var cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.setAttribute('data-row', i);
-                    cell.setAttribute('data-col', j);
-
-                    // Touch события
-                    cell.addEventListener('touchstart', handleTouchStart, false);
-                    cell.addEventListener('touchend', handleTouchEnd, false);
-                    cell.addEventListener('touchmove', handleTouchMove, false);
-
-                    // Mouse события для тестирования
-                    cell.addEventListener('click', handleClick, false);
-                    cell.addEventListener('contextmenu', handleRightClick, false);
-
-                    gridEl.appendChild(cell);
+                    
+                    html += '<span class="cell" data-row="' + i + '" data-col="' + j + '"></span>';
                 }
+                
+                html += '</div>';
+            }
+            
+            gridEl.innerHTML = html;
+            
+            // Добавляем события
+            var cells = gridEl.getElementsByClassName('cell');
+            for (var k = 0; k < cells.length; k++) {
+                addCellEvents(cells[k]);
             }
         }
-
+        
+        function addCellEvents(cell) {
+            cell.ontouchstart = function(e) {
+                if (gameOver) return;
+                e.preventDefault();
+                touchMoved = false;
+                touchStartTime = Date.now();
+                
+                var row = parseInt(this.getAttribute('data-row'));
+                var col = parseInt(this.getAttribute('data-col'));
+                var self = this;
+                
+                touchTimer = setTimeout(function() {
+                    if (!touchMoved) {
+                        toggleFlag(row, col);
+                    }
+                    touchTimer = null;
+                }, 500);
+            };
+            
+            cell.ontouchmove = function(e) {
+                touchMoved = true;
+                if (touchTimer) {
+                    clearTimeout(touchTimer);
+                    touchTimer = null;
+                }
+            };
+            
+            cell.ontouchend = function(e) {
+                if (gameOver) return;
+                e.preventDefault();
+                
+                if (touchTimer) {
+                    clearTimeout(touchTimer);
+                    touchTimer = null;
+                    
+                    if (!touchMoved) {
+                        var row = parseInt(this.getAttribute('data-row'));
+                        var col = parseInt(this.getAttribute('data-col'));
+                        revealCell(row, col);
+                    }
+                }
+            };
+            
+            // Для мыши (тестирование на компьютере)
+            cell.onclick = function(e) {
+                if (gameOver) return;
+                var row = parseInt(this.getAttribute('data-row'));
+                var col = parseInt(this.getAttribute('data-col'));
+                revealCell(row, col);
+            };
+            
+            cell.oncontextmenu = function(e) {
+                e.preventDefault();
+                if (gameOver) return;
+                var row = parseInt(this.getAttribute('data-row'));
+                var col = parseInt(this.getAttribute('data-col'));
+                toggleFlag(row, col);
+                return false;
+            };
+        }
+        
         function placeMines(excludeRow, excludeCol) {
             var placed = 0;
             while (placed < MINES) {
                 var r = Math.floor(Math.random() * ROWS);
                 var c = Math.floor(Math.random() * COLS);
-
-                // Не ставим мину на первый клик и вокруг него
+                
                 if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) {
                     continue;
                 }
-
+                
                 if (grid[r][c] !== -1) {
                     grid[r][c] = -1;
                     placed++;
                 }
             }
-
-            // Считаем числа
+            
             for (var i = 0; i < ROWS; i++) {
                 for (var j = 0; j < COLS; j++) {
                     if (grid[i][j] === -1) continue;
-
+                    
                     var count = 0;
                     for (var di = -1; di <= 1; di++) {
                         for (var dj = -1; dj <= 1; dj++) {
@@ -311,106 +365,51 @@
                 }
             }
         }
-
-        function handleTouchStart(e) {
-            if (gameOver) return;
-            e.preventDefault();
-            touchMoved = false;
-
-            var row = parseInt(this.getAttribute('data-row'));
-            var col = parseInt(this.getAttribute('data-col'));
-
-            touchTimer = setTimeout(function() {
-                if (!touchMoved) {
-                    toggleFlag(row, col);
-                }
-                touchTimer = null;
-            }, 500);
-        }
-
-        function handleTouchMove(e) {
-            touchMoved = true;
-            if (touchTimer) {
-                clearTimeout(touchTimer);
-                touchTimer = null;
-            }
-        }
-
-        function handleTouchEnd(e) {
-            if (gameOver) return;
-            e.preventDefault();
-
-            if (touchTimer) {
-                clearTimeout(touchTimer);
-                touchTimer = null;
-
-                if (!touchMoved) {
-                    var row = parseInt(this.getAttribute('data-row'));
-                    var col = parseInt(this.getAttribute('data-col'));
-                    revealCell(row, col);
-                }
-            }
-        }
-
-        function handleClick(e) {
-            if (gameOver) return;
-            var row = parseInt(this.getAttribute('data-row'));
-            var col = parseInt(this.getAttribute('data-col'));
-            revealCell(row, col);
-        }
-
-        function handleRightClick(e) {
-            e.preventDefault();
-            if (gameOver) return;
-            var row = parseInt(this.getAttribute('data-row'));
-            var col = parseInt(this.getAttribute('data-col'));
-            toggleFlag(row, col);
-        }
-
+        
         function toggleFlag(row, col) {
             if (revealed[row][col]) return;
-
+            
             var cell = getCell(row, col);
-
+            
             if (flagged[row][col]) {
                 flagged[row][col] = false;
                 cell.className = 'cell';
+                cell.innerHTML = '';
                 minesLeft++;
             } else {
                 flagged[row][col] = true;
                 cell.className = 'cell flagged';
+                cell.innerHTML = '🚩';
                 minesLeft--;
             }
-
-            document.getElementById('mineCount').textContent = minesLeft < 10 ? '0' + minesLeft : minesLeft;
+            
+            updateMineCount();
         }
-
+        
         function revealCell(row, col) {
             if (flagged[row][col] || revealed[row][col]) return;
-
+            
             if (firstClick) {
                 firstClick = false;
                 placeMines(row, col);
                 startTimer();
             }
-
+            
             revealed[row][col] = true;
             var cell = getCell(row, col);
             cell.className = 'cell revealed';
-
+            
             if (grid[row][col] === -1) {
-                // Мина!
                 cell.className = 'cell mine';
-                cell.textContent = '💣';
+                cell.innerHTML = '💣';
                 endGame(false);
                 return;
             }
-
+            
             if (grid[row][col] > 0) {
-                cell.textContent = grid[row][col];
+                cell.innerHTML = grid[row][col];
                 cell.className = 'cell revealed n' + grid[row][col];
             } else {
-                // Пустая клетка - открываем соседей
                 for (var di = -1; di <= 1; di++) {
                     for (var dj = -1; dj <= 1; dj++) {
                         var ni = row + di;
@@ -423,15 +422,16 @@
                     }
                 }
             }
-
+            
             checkWin();
         }
-
+        
         function getCell(row, col) {
-            var index = row * COLS + col;
-            return document.getElementById('grid').children[index];
+            var rows = document.getElementById('grid').getElementsByClassName('row');
+            var cells = rows[row].getElementsByClassName('cell');
+            return cells[col];
         }
-
+        
         function checkWin() {
             var unrevealed = 0;
             for (var i = 0; i < ROWS; i++) {
@@ -439,78 +439,76 @@
                     if (!revealed[i][j]) unrevealed++;
                 }
             }
-
+            
             if (unrevealed === MINES) {
                 endGame(true);
             }
         }
-
+        
         function endGame(won) {
             gameOver = true;
-            clearInterval(timerInterval);
-
-            document.querySelector('.reset-btn').textContent = won ? '😎' : '😵';
-
-            // Показываем все мины
+            if (timerInterval) clearInterval(timerInterval);
+            
+            document.getElementsByClassName('reset-btn')[0].innerHTML = won ? '😎' : '😵';
+            
             for (var i = 0; i < ROWS; i++) {
                 for (var j = 0; j < COLS; j++) {
                     if (grid[i][j] === -1 && !revealed[i][j]) {
                         var cell = getCell(i, j);
-                        cell.className = won ? 'cell flagged' : 'cell mine';
-                        if (!won) cell.textContent = '💣';
+                        if (won) {
+                            cell.className = 'cell flagged';
+                            cell.innerHTML = '🚩';
+                        } else {
+                            cell.className = 'cell mine';
+                            cell.innerHTML = '💣';
+                        }
                     }
                 }
             }
-
-            var msg = document.getElementById('message');
-            var msgText = document.getElementById('messageText');
-            msgText.textContent = won ? '🎉 Победа!' : '💥 Проигрыш!';
-            msg.className = 'message';
+            
+            document.getElementById('messageText').innerHTML = won ? '🎉 Победа!' : '💥 Проигрыш!';
+            document.getElementById('message').className = 'message show';
         }
-
+        
         function startTimer() {
             seconds = 0;
             timerInterval = setInterval(function() {
                 seconds++;
-                var display = seconds < 10 ? '00' + seconds : (seconds < 100 ? '0' + seconds : seconds);
-                document.getElementById('timer').textContent = display;
+                var s = String(seconds);
+                while (s.length < 3) s = '0' + s;
+                document.getElementById('timer').innerHTML = s;
             }, 1000);
         }
-
+        
+        function updateMineCount() {
+            var s = String(minesLeft);
+            if (s.length < 2) s = '0' + s;
+            document.getElementById('mineCount').innerHTML = s;
+        }
+        
         function resetGame() {
             gameOver = false;
             firstClick = true;
             minesLeft = MINES;
             seconds = 0;
-
+            
             if (timerInterval) clearInterval(timerInterval);
-
-            document.getElementById('timer').textContent = '000';
-            document.getElementById('mineCount').textContent = MINES < 10 ? '0' + MINES : MINES;
-            document.querySelector('.reset-btn').textContent = '😊';
-            document.getElementById('message').className = 'message hidden';
-
+            timerInterval = null;
+            
+            document.getElementById('timer').innerHTML = '000';
+            updateMineCount();
+            document.getElementsByClassName('reset-btn')[0].innerHTML = '😊';
+            document.getElementById('message').className = 'message';
+            
             createGrid();
         }
-
+        
         // Блокировка навигации
         window.onbeforeunload = function() {
-            return 'Вы уверены что хотите уйти?';
+            return 'Уйти?';
         };
-
-        // Блокировка свайпов назад
-        document.addEventListener('touchmove', function(e) {
-            if (e.touches[0].clientX < 20 || e.touches[0].clientX > window.innerWidth - 20) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Блокировка зума
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        });
-
-        // Запуск игры
+        
+        // Запуск
         resetGame();
     </script>
 </body>
