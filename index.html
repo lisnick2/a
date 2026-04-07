@@ -1,9 +1,453 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Сапёр</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 10px;
+            padding-top: 20px;
+        }
+
+        .header {
+            background: #34495e;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .info-box {
+            background: #1a1a2e;
+            color: #e74c3c;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 5px;
+            min-width: 50px;
+            display: inline-block;
+            font-family: monospace;
+            vertical-align: middle;
+        }
+
+        .reset-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 26px;
+            border: none;
+            border-radius: 10px;
+            background: #f39c12;
+            margin: 0 10px;
+            vertical-align: middle;
+        }
+
+        .mode-btn {
+            display: block;
+            margin: 10px auto;
+            padding: 12px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .mode-btn.dig {
+            background: #3498db;
+        }
+
+        .mode-btn.flag {
+            background: #9b59b6;
+        }
+
+        .grid-wrap {
+            display: inline-block;
+            background: #7f8c8d;
+            padding: 5px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .row {
+            white-space: nowrap;
+            height: 38px;
+        }
+
+        .cell {
+            width: 36px;
+            height: 36px;
+            background: #3498db;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+            vertical-align: top;
+            margin: 1px;
+            line-height: 36px;
+            text-align: center;
+        }
+
+        .cell.revealed {
+            background: #ecf0f1;
+        }
+
+        .cell.mine {
+            background: #e74c3c;
+        }
+
+        .cell.flagged {
+            background: #9b59b6;
+        }
+
+        .n1 { color: #3498db; }
+        .n2 { color: #27ae60; }
+        .n3 { color: #e74c3c; }
+        .n4 { color: #8e44ad; }
+        .n5 { color: #c0392b; }
+        .n6 { color: #16a085; }
+        .n7 { color: #2c3e50; }
+        .n8 { color: #7f8c8d; }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            padding-top: 200px;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .msg {
+            font-size: 32px;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            padding: 15px 40px;
+            font-size: 22px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .diff-wrap {
+            margin-bottom: 10px;
+        }
+
+        .diff-btn {
+            padding: 8px 15px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #95a5a6;
+            color: white;
+            margin: 2px;
+        }
+
+        .diff-btn.on {
+            background: #27ae60;
+        }
+
+        .hint {
+            color: #bdc3c7;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
 <body>
 
-<h1>My First Heading</h1>
-<p>My first paragraph.</p>
+<div class="diff-wrap">
+    <button class="diff-btn on" id="d1" onclick="setDiff(8,8,10,this)">Легко</button>
+    <button class="diff-btn" id="d2" onclick="setDiff(10,10,20,this)">Средне</button>
+    <button class="diff-btn" id="d3" onclick="setDiff(12,12,35,this)">Сложно</button>
+</div>
+
+<div class="header">
+    <span class="info-box" id="mineCount">10</span>
+    <button class="reset-btn" onclick="resetGame()">😊</button>
+    <span class="info-box" id="timer">000</span>
+</div>
+
+<button class="mode-btn dig" id="modeBtn" onclick="toggleMode()">🔍 Копать</button>
+
+<div class="grid-wrap">
+    <div id="grid"></div>
+</div>
+
+<p class="hint">Нажми "Копать/Флажок" чтобы переключить режим</p>
+
+<div class="overlay" id="overlay">
+    <div class="msg" id="msg"></div>
+    <button class="play-btn" onclick="resetGame()">Играть снова</button>
+</div>
+
+<script>
+var ROWS = 8;
+var COLS = 8;
+var MINES = 10;
+var grid = [];
+var revealed = [];
+var flagged = [];
+var gameOver = false;
+var firstClick = true;
+var timerID = null;
+var seconds = 0;
+var minesLeft = 10;
+var flagMode = false;
+
+function setDiff(r, c, m, btn) {
+    ROWS = r;
+    COLS = c;
+    MINES = m;
+    document.getElementById('d1').className = 'diff-btn';
+    document.getElementById('d2').className = 'diff-btn';
+    document.getElementById('d3').className = 'diff-btn';
+    btn.className = 'diff-btn on';
+    resetGame();
+}
+
+function toggleMode() {
+    flagMode = !flagMode;
+    var btn = document.getElementById('modeBtn');
+    if (flagMode) {
+        btn.innerHTML = '🚩 Флажок';
+        btn.className = 'mode-btn flag';
+    } else {
+        btn.innerHTML = '🔍 Копать';
+        btn.className = 'mode-btn dig';
+    }
+}
+
+function createGrid() {
+    var html = '';
+    grid = [];
+    revealed = [];
+    flagged = [];
+
+    for (var i = 0; i < ROWS; i++) {
+        grid[i] = [];
+        revealed[i] = [];
+        flagged[i] = [];
+        html += '<div class="row">';
+        for (var j = 0; j < COLS; j++) {
+            grid[i][j] = 0;
+            revealed[i][j] = false;
+            flagged[i][j] = false;
+            html += '<span class="cell" onclick="tap(' + i + ',' + j + ')"></span>';
+        }
+        html += '</div>';
+    }
+    document.getElementById('grid').innerHTML = html;
+}
+
+function placeMines(exR, exC) {
+    var placed = 0;
+    while (placed < MINES) {
+        var r = Math.floor(Math.random() * ROWS);
+        var c = Math.floor(Math.random() * COLS);
+
+        if (Math.abs(r - exR) <= 1 && Math.abs(c - exC) <= 1) {
+            continue;
+        }
+
+        if (grid[r][c] !== -1) {
+            grid[r][c] = -1;
+            placed++;
+        }
+    }
+
+    for (var i = 0; i < ROWS; i++) {
+        for (var j = 0; j < COLS; j++) {
+            if (grid[i][j] === -1) continue;
+            var count = 0;
+            for (var di = -1; di <= 1; di++) {
+                for (var dj = -1; dj <= 1; dj++) {
+                    var ni = i + di;
+                    var nj = j + dj;
+                    if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
+                        if (grid[ni][nj] === -1) count++;
+                    }
+                }
+            }
+            grid[i][j] = count;
+        }
+    }
+}
+
+function getCell(r, c) {
+    var rows = document.getElementById('grid').getElementsByClassName('row');
+    return rows[r].getElementsByClassName('cell')[c];
+}
+
+function tap(r, c) {
+    if (gameOver) return;
+
+    if (flagMode) {
+        toggleFlag(r, c);
+    } else {
+        revealCell(r, c);
+    }
+}
+
+function toggleFlag(r, c) {
+    if (revealed[r][c]) return;
+
+    var cell = getCell(r, c);
+
+    if (flagged[r][c]) {
+        flagged[r][c] = false;
+        cell.className = 'cell';
+        cell.innerHTML = '';
+        minesLeft++;
+    } else {
+        flagged[r][c] = true;
+        cell.className = 'cell flagged';
+        cell.innerHTML = '🚩';
+        minesLeft--;
+    }
+
+    updateMineCount();
+}
+
+function revealCell(r, c) {
+    if (flagged[r][c] || revealed[r][c]) return;
+
+    if (firstClick) {
+        firstClick = false;
+        placeMines(r, c);
+        startTimer();
+    }
+
+    revealed[r][c] = true;
+    var cell = getCell(r, c);
+
+    if (grid[r][c] === -1) {
+        cell.className = 'cell mine';
+        cell.innerHTML = '💣';
+        endGame(false);
+        return;
+    }
+
+    cell.className = 'cell revealed';
+
+    if (grid[r][c] > 0) {
+        cell.innerHTML = grid[r][c];
+        cell.className = 'cell revealed n' + grid[r][c];
+    } else {
+        for (var di = -1; di <= 1; di++) {
+            for (var dj = -1; dj <= 1; dj++) {
+                var ni = r + di;
+                var nj = c + dj;
+                if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
+                    if (!revealed[ni][nj]) {
+                        revealCell(ni, nj);
+                    }
+                }
+            }
+        }
+    }
+
+    checkWin();
+}
+
+function checkWin() {
+    var unrevealed = 0;
+    for (var i = 0; i < ROWS; i++) {
+        for (var j = 0; j < COLS; j++) {
+            if (!revealed[i][j]) unrevealed++;
+        }
+    }
+    if (unrevealed === MINES) {
+        endGame(true);
+    }
+}
+
+function endGame(won) {
+    gameOver = true;
+    if (timerID) clearInterval(timerID);
+
+    document.getElementsByClassName('reset-btn')[0].innerHTML = won ? '😎' : '😵';
+
+    for (var i = 0; i < ROWS; i++) {
+        for (var j = 0; j < COLS; j++) {
+            if (grid[i][j] === -1 && !revealed[i][j]) {
+                var cell = getCell(i, j);
+                if (won) {
+                    cell.className = 'cell flagged';
+                    cell.innerHTML = '🚩';
+                } else {
+                    cell.className = 'cell mine';
+                    cell.innerHTML = '💣';
+                }
+            }
+        }
+    }
+
+    document.getElementById('msg').innerHTML = won ? '🎉 Победа!' : '💥 Бум!';
+    document.getElementById('overlay').className = 'overlay show';
+}
+
+function startTimer() {
+    seconds = 0;
+    timerID = setInterval(function() {
+        seconds++;
+        var s = String(seconds);
+        while (s.length < 3) s = '0' + s;
+        document.getElementById('timer').innerHTML = s;
+    }, 1000);
+}
+
+function updateMineCount() {
+    var s = String(minesLeft);
+    while (s.length < 2) s = '0' + s;
+    document.getElementById('mineCount').innerHTML = s;
+}
+
+function resetGame() {
+    gameOver = false;
+    firstClick = true;
+    minesLeft = MINES;
+    seconds = 0;
+    flagMode = false;
+
+    if (timerID) clearInterval(timerID);
+    timerID = null;
+
+    document.getElementById('timer').innerHTML = '000';
+    updateMineCount();
+    document.getElementsByClassName('reset-btn')[0].innerHTML = '😊';
+    document.getElementById('overlay').className = 'overlay';
+    document.getElementById('modeBtn').innerHTML = '🔍 Копать';
+    document.getElementById('modeBtn').className = 'mode-btn dig';
+
+    createGrid();
+}
+
+resetGame();
+</script>
 
 </body>
 </html>
