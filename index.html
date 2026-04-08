@@ -109,10 +109,113 @@
         .n7 { color: #2c3e50; }
         .n8 { color: #7f8c8d; }
 
+        /* === Анимация открытия клетки === */
+        @-webkit-keyframes cellPop {
+            0% {
+                -webkit-transform: scale(0.7);
+                transform: scale(0.7);
+                background: #f1c40f;
+            }
+            50% {
+                -webkit-transform: scale(1.1);
+                transform: scale(1.1);
+            }
+            100% {
+                -webkit-transform: scale(1.0);
+                transform: scale(1.0);
+            }
+        }
+        @keyframes cellPop {
+            0% {
+                transform: scale(0.7);
+                background: #f1c40f;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1.0);
+            }
+        }
+
+        .cell.pop {
+            -webkit-animation: cellPop 0.25s ease-out;
+            animation: cellPop 0.25s ease-out;
+        }
+
+        /* === Анимация установки флажка === */
+        @-webkit-keyframes flagBounce {
+            0% {
+                -webkit-transform: scale(0.5) rotate(-15deg);
+                transform: scale(0.5) rotate(-15deg);
+            }
+            60% {
+                -webkit-transform: scale(1.2) rotate(5deg);
+                transform: scale(1.2) rotate(5deg);
+            }
+            100% {
+                -webkit-transform: scale(1.0) rotate(0deg);
+                transform: scale(1.0) rotate(0deg);
+            }
+        }
+        @keyframes flagBounce {
+            0% {
+                transform: scale(0.5) rotate(-15deg);
+            }
+            60% {
+                transform: scale(1.2) rotate(5deg);
+            }
+            100% {
+                transform: scale(1.0) rotate(0deg);
+            }
+        }
+
+        .cell.flagBounce {
+            -webkit-animation: flagBounce 0.3s ease-out;
+            animation: flagBounce 0.3s ease-out;
+        }
+
+        /* === Анимация взрыва мины === */
+        @-webkit-keyframes boom {
+            0% {
+                -webkit-transform: scale(0.3);
+                transform: scale(0.3);
+                background: #fff;
+            }
+            40% {
+                -webkit-transform: scale(1.3);
+                transform: scale(1.3);
+                background: #e74c3c;
+            }
+            100% {
+                -webkit-transform: scale(1.0);
+                transform: scale(1.0);
+            }
+        }
+        @keyframes boom {
+            0% {
+                transform: scale(0.3);
+                background: #fff;
+            }
+            40% {
+                transform: scale(1.3);
+                background: #e74c3c;
+            }
+            100% {
+                transform: scale(1.0);
+            }
+        }
+
+        .cell.boom {
+            -webkit-animation: boom 0.4s ease-out;
+            animation: boom 0.4s ease-out;
+        }
+
+        /* === Экран сообщения === */
         .message {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); /* прозрачнее */
+            background: rgba(0,0,0,0.5);
             text-align: center;
             padding-top: 180px;
             z-index: 100;
@@ -121,7 +224,6 @@
         }
         .message.show { display: block; }
 
-        /* Canvas для фейерверков */
         #fx {
             position: absolute;
             top: 0; left: 0;
@@ -134,7 +236,7 @@
         .message-text {
             position: relative;
             z-index: 102;
-            font-size: 48px; /* больше */
+            font-size: 48px;
             font-weight: bold;
             margin-bottom: 25px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.45);
@@ -143,24 +245,44 @@
         .message-text.win { color: #2ecc71; }
         .message-text.lose { color: #e74c3c; }
 
-        /* Короткие анимации (немного “эффекта”, но не долго) */
+        @-webkit-keyframes pop {
+            0% { -webkit-transform: scale(0.9); opacity: 0.0; }
+            40% { -webkit-transform: scale(1.10); opacity: 1; }
+            100% { -webkit-transform: scale(1.0); opacity: 1; }
+        }
         @keyframes pop {
             0% { transform: scale(0.9); opacity: 0.0; }
             40% { transform: scale(1.10); opacity: 1; }
             100% { transform: scale(1.0); opacity: 1; }
         }
+
+        @-webkit-keyframes shake {
+            0% { -webkit-transform: translate(0,0); }
+            15% { -webkit-transform: translate(-4px,0); }
+            30% { -webkit-transform: translate(4px,0); }
+            45% { -webkit-transform: translate(-3px,0); }
+            60% { -webkit-transform: translate(3px,0); }
+            75% { -webkit-transform: translate(-2px,0); }
+            100% { -webkit-transform: translate(0,0); }
+        }
         @keyframes shake {
             0% { transform: translate(0,0); }
-            15% { transform: translate(-3px,0); }
-            30% { transform: translate(3px,0); }
-            45% { transform: translate(-2px,0); }
-            60% { transform: translate(2px,0); }
-            75% { transform: translate(-1px,0); }
+            15% { transform: translate(-4px,0); }
+            30% { transform: translate(4px,0); }
+            45% { transform: translate(-3px,0); }
+            60% { transform: translate(3px,0); }
+            75% { transform: translate(-2px,0); }
             100% { transform: translate(0,0); }
         }
 
-        .pop { animation: pop 0.55s ease-out; }
-        .shake { animation: shake 0.6s ease-in-out; }
+        .textPop {
+            -webkit-animation: pop 0.55s ease-out;
+            animation: pop 0.55s ease-out;
+        }
+        .textShake {
+            -webkit-animation: shake 0.6s ease-in-out;
+            animation: shake 0.6s ease-in-out;
+        }
 
         .message-btn {
             position: relative;
@@ -242,9 +364,7 @@
         // ====== Fireworks (canvas) ======
         var fxCanvas = document.getElementById('fx');
         var fxCtx = fxCanvas.getContext('2d');
-
         var fxRAF = null;
-        var fxStart = 0;
 
         function stopFireworks() {
             if (fxRAF) {
@@ -260,29 +380,21 @@
             var w = window.innerWidth || 320;
             var h = window.innerHeight || 480;
             var dpr = window.devicePixelRatio || 1;
-
-            // Чтобы работало и на старых iPad 2, не делаем слишком много DPI
             if (dpr > 2) dpr = 2;
 
             fxCanvas.width = Math.floor(w * dpr);
             fxCanvas.height = Math.floor(h * dpr);
-
-            // Координаты в CSS пикселях
             fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             fxCtx.clearRect(0, 0, w, h);
 
             var particles = [];
             var startTime = Date.now();
-            fxStart = startTime;
-
-            var duration = 1200; // коротко
+            var duration = 1400;
 
             var centerX = w * 0.5;
             var baseY = h * 0.35;
-
-            // “побольше”
-            var bursts = 26;        // больше разрывов
-            var perBurst = 16;     // больше частиц
+            var bursts = 30;
+            var perBurst = 18;
             var gravity = 0.08;
 
             function rand(min, max) {
@@ -290,31 +402,28 @@
             }
 
             function pickColor() {
-                // зелёно-белые и жёлтые оттенки
-                var colors = ['#2ecc71', '#7CFFB2', '#F1C40F', '#FFFFFF'];
+                var colors = ['#2ecc71', '#7CFFB2', '#F1C40F', '#FFFFFF', '#3498db', '#e74c3c'];
                 return colors[(Math.random() * colors.length) | 0];
             }
 
             for (var b = 0; b < bursts; b++) {
-                var bx = centerX + rand(-w*0.18, w*0.18);
-                var by = baseY + rand(-h*0.12, h*0.10);
-
-                // Направление: часть вверх/в стороны
-                var baseAngle = rand(Math.PI * 0.85, Math.PI * 2.15);
+                var bx = centerX + rand(-w*0.22, w*0.22);
+                var by = baseY + rand(-h*0.15, h*0.12);
+                var baseAngle = rand(0, Math.PI * 2);
 
                 for (var i = 0; i < perBurst; i++) {
-                    var ang = baseAngle + rand(-Math.PI/2, Math.PI/2);
-                    var speed = rand(2.2, 5.6);
+                    var ang = baseAngle + rand(-Math.PI, Math.PI);
+                    var speed = rand(2.5, 6.0);
 
                     particles.push({
                         x: bx,
                         y: by,
                         vx: Math.cos(ang) * speed,
                         vy: Math.sin(ang) * speed,
-                        g: gravity * rand(0.9, 1.25),
-                        life: rand(40, 85),     // количество кадров “жизни”
-                        decay: rand(0.90, 0.97),
-                        size: rand(1.2, 2.4),
+                        g: gravity * rand(0.9, 1.3),
+                        life: rand(45, 90),
+                        decay: rand(0.91, 0.97),
+                        size: rand(1.5, 3.0),
                         color: pickColor(),
                         a: 1
                     });
@@ -332,29 +441,22 @@
 
                 for (var p = 0; p < particles.length; p++) {
                     var pt = particles[p];
-
                     pt.vy += pt.g;
                     pt.x += pt.vx;
                     pt.y += pt.vy;
-
                     pt.life -= 1;
                     pt.a *= pt.decay;
 
                     if (pt.a < 0.02 || pt.life <= 0) continue;
 
                     fxCtx.globalAlpha = pt.a;
-
-                    // Рисуем “точки”
                     fxCtx.fillStyle = pt.color;
-                    fxCtx.fillRect(pt.x - pt.size/2, pt.y - pt.size/2, pt.size, pt.size);
-
-                    // Лёгкий “след” — короткая линия
-                    fxCtx.globalAlpha = pt.a * 0.7;
-                    fxCtx.fillRect(pt.x - pt.vx*0.12, pt.y - pt.vy*0.12, 1, 1);
+                    fxCtx.beginPath();
+                    fxCtx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+                    fxCtx.fill();
                 }
 
                 fxCtx.globalAlpha = 1;
-
                 fxRAF = requestAnimationFrame(draw);
             }
 
@@ -417,10 +519,8 @@
 
                 var row = parseInt(this.getAttribute('data-row'));
                 var col = parseInt(this.getAttribute('data-col'));
-                var self = this;
 
                 touchTimer = setTimeout(function() {
-                    // долгий тап = флажок
                     toggleFlag(row, col);
                     touchTimer = null;
                 }, 500);
@@ -438,7 +538,6 @@
                 if (gameOver) return;
                 e.preventDefault();
 
-                // Если тап был короткий — открываем
                 if (touchTimer) {
                     clearTimeout(touchTimer);
                     touchTimer = null;
@@ -451,7 +550,6 @@
                 }
             };
 
-            // для ПК/тестов
             cell.onclick = function(e) {
                 if (gameOver) return;
                 var row = parseInt(this.getAttribute('data-row'));
@@ -521,7 +619,7 @@
                 minesLeft++;
             } else {
                 flagged[row][col] = true;
-                cell.className = 'cell flagged';
+                cell.className = 'cell flagged flagBounce';
                 cell.innerHTML = '🚩';
                 minesLeft--;
             }
@@ -541,25 +639,31 @@
             revealed[row][col] = true;
 
             var cell = getCell(row, col);
-            cell.className = 'cell revealed';
 
             if (grid[row][col] === -1) {
-                cell.className = 'cell mine';
+                // Мина - взрыв!
+                cell.className = 'cell mine boom';
                 cell.innerHTML = '💣';
                 endGame(false);
                 return;
             }
 
+            // Обычная клетка - pop анимация
             if (grid[row][col] > 0) {
                 cell.innerHTML = grid[row][col];
-                cell.className = 'cell revealed n' + grid[row][col];
+                cell.className = 'cell revealed pop n' + grid[row][col];
             } else {
+                cell.className = 'cell revealed pop';
+
+                // Открываем соседей с небольшой задержкой для эффекта "волны"
                 for (var di = -1; di <= 1; di++) {
                     for (var dj = -1; dj <= 1; dj++) {
                         var ni = row + di;
                         var nj = col + dj;
                         if (ni >= 0 && ni < ROWS && nj >= 0 && nj < COLS) {
-                            if (!revealed[ni][nj]) revealCell(ni, nj);
+                            if (!revealed[ni][nj]) {
+                                revealCell(ni, nj);
+                            }
                         }
                     }
                 }
@@ -583,10 +687,11 @@
 
             if (timerInterval) clearInterval(timerInterval);
 
-            stopFireworks(); // на всякий случай
+            stopFireworks();
 
             document.getElementsByClassName('reset-btn')[0].innerHTML = won ? '😎' : '😵';
 
+            // Показываем все мины
             for (var i = 0; i < ROWS; i++) {
                 for (var j = 0; j < COLS; j++) {
                     if (grid[i][j] === -1 && !revealed[i][j]) {
@@ -607,16 +712,16 @@
 
             if (won) {
                 msgText.innerHTML = '🎉 Победа! 🎉';
-                msgText.className = 'message-text win pop';
+                msgText.className = 'message-text win textPop';
+                setTimeout(function() {
+                    startFireworks();
+                }, 100);
             } else {
                 msgText.innerHTML = '💥 Проигрыш! 💥';
-                msgText.className = 'message-text lose shake';
+                msgText.className = 'message-text lose textShake';
             }
 
             msg.className = 'message show';
-
-            // Фейерверки только при победе
-            if (won) startFireworks();
         }
 
         function startTimer() {
